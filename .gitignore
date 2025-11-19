@@ -1,0 +1,73 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+.venv
+*.egg-info/
+dist/
+build/
+
+# Django
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+/media
+/staticfiles
+
+# React
+node_modules/
+/build
+/.pwd
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment variables
+.env
+.env.backend
+.env.frontend
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# ML Models
+*.pkl
+*.h5
+*.joblib
+ml_pipeline/models/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Media files
+backend/media/
+backend/staticfiles/
+
+#projectFiles
+PRODUCTION_QUICKSTART.md
+PROJECT_SUMMARY.md
+QUICKSTART.md
+api_docs.md
+architecture.md
+development.md
+datasets.md
+erd.md
+
