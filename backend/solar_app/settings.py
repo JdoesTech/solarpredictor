@@ -80,6 +80,17 @@ DATABASES = {
 SUPABASE_URL = os.getenv('SUPABASE_URL', '')
 SUPABASE_KEY = os.getenv('SUPABASE_KEY', '')
 
+# External API configuration
+SOLCAST_API_KEY = os.getenv('SOLCAST_API_KEY', '')
+SOLCAST_BASE_URL = os.getenv('SOLCAST_BASE_URL', 'https://api.solcast.com.au/world_radiation/forecasts')
+SOLCAST_CACHE_TTL_SECONDS = int(os.getenv('SOLCAST_CACHE_TTL_SECONDS', '900'))
+SOLCAST_MAX_HOURS = int(os.getenv('SOLCAST_MAX_HOURS', '336'))  # 14 days of hourly data
+
+NOMINATIM_BASE_URL = os.getenv('NOMINATIM_BASE_URL', 'https://nominatim.openstreetmap.org')
+NOMINATIM_USER_AGENT = os.getenv('NOMINATIM_USER_AGENT', 'SolarForecastDashboard/1.0')
+NOMINATIM_EMAIL = os.getenv('NOMINATIM_EMAIL', '')
+NOMINATIM_RATE_LIMIT_SECONDS = float(os.getenv('NOMINATIM_RATE_LIMIT_SECONDS', '1'))
+
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
     {

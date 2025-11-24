@@ -9,7 +9,11 @@
     "axios": "^1.6.2",
     "@supabase/supabase-js": "^2.38.4",
     "recharts": "^2.10.3",
-    "react-dropzone": "^14.2.3"
+    "react-dropzone": "^14.2.3",
+    "react-leaflet": "^4.2.1",
+    "leaflet": "^1.9.4",
+    "chart.js": "^4.4.1",
+    "react-chartjs-2": "^5.2.0"
   },
   "scripts": {
     "start": "react-scripts start",

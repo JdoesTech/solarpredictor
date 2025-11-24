@@ -7,8 +7,11 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.conf import settings
 from supabase import create_client, Client
-import pandas as pd
 import os
+import time
+import copy
+import requests
+from threading import Lock
 from datetime import datetime, timedelta
 from .serializers import (
     WeatherDataSerializer,
@@ -21,6 +24,226 @@ from ml_models.predictor import SolarEnergyPredictor
 from ml_models.trainer import ModelTrainer
 from data_processing.file_handler import FileHandler
 
+
+SOLCAST_API_KEY = getattr(settings, 'SOLCAST_API_KEY', '')
+SOLCAST_CACHE_TTL = getattr(settings, 'SOLCAST_CACHE_TTL_SECONDS', 900)
+SOLCAST_MAX_HOURS = getattr(settings, 'SOLCAST_MAX_HOURS', 336)
+SOLCAST_BASE_URL = getattr(settings, 'SOLCAST_BASE_URL', '')
+NOMINATIM_BASE_URL = getattr(settings, 'NOMINATIM_BASE_URL', '')
+NOMINATIM_RATE_LIMIT_SECONDS = getattr(settings, 'NOMINATIM_RATE_LIMIT_SECONDS', 1.0)
+
+_solcast_cache = {}
+_solcast_cache_lock = Lock()
+_nominatim_lock = Lock()
+_nominatim_last_call = 0.0
+
+
+def _round_coord(value: float) -> float:
+    return round(value, 4)
+
+
+def _solcast_cache_key(lat: float, lon: float) -> str:
+    return f"{_round_coord(lat)}:{_round_coord(lon)}"
+
+
+def _get_cached_forecast(lat: float, lon: float):
+    if not SOLCAST_CACHE_TTL:
+        return None
+
+    cache_key = _solcast_cache_key(lat, lon)
+    with _solcast_cache_lock:
+        cached = _solcast_cache.get(cache_key)
+        if cached and cached['expires_at'] > time.time():
+            return cached
+        if cached:
+            # Expired entry, clean it up
+            _solcast_cache.pop(cache_key, None)
+    return None
+
+
+def _store_forecast_in_cache(lat: float, lon: float, data: dict):
+    if not SOLCAST_CACHE_TTL:
+        return
+    cache_key = _solcast_cache_key(lat, lon)
+    with _solcast_cache_lock:
+        _solcast_cache[cache_key] = {
+            'data': data,
+            'expires_at': time.time() + SOLCAST_CACHE_TTL,
+        }
+
+
+def _enforce_nominatim_rate_limit():
+    global _nominatim_last_call
+    with _nominatim_lock:
+        elapsed = time.monotonic() - _nominatim_last_call
+        wait_time = NOMINATIM_RATE_LIMIT_SECONDS - elapsed
+        if wait_time > 0:
+            time.sleep(wait_time)
+        _nominatim_last_call = time.monotonic()
+
+
+def _call_nominatim(endpoint: str, params: dict):
+    if not NOMINATIM_BASE_URL:
+        raise RuntimeError('Nominatim base URL is not configured')
+
+    _enforce_nominatim_rate_limit()
+    headers = {
+        'User-Agent': getattr(settings, 'NOMINATIM_USER_AGENT', 'SolarForecastDashboard/1.0')
+    }
+    if getattr(settings, 'NOMINATIM_EMAIL', ''):
+        params['email'] = settings.NOMINATIM_EMAIL
+
+    response = requests.get(
+        f"{NOMINATIM_BASE_URL.rstrip('/')}/{endpoint.lstrip('/')}",
+        params=params,
+        headers=headers,
+        timeout=15,
+    )
+    response.raise_for_status()
+    return response.json()
+
+
+def _reverse_geocode(lat: float, lon: float):
+    try:
+        data = _call_nominatim(
+            'reverse',
+            {
+                'lat': lat,
+                'lon': lon,
+                'format': 'jsonv2',
+                'zoom': 10,
+                'addressdetails': 1,
+            },
+        )
+        address = data.get('address', {})
+        return {
+            'display_name': data.get('display_name'),
+            'city': address.get('city') or address.get('town') or address.get('village'),
+            'country': address.get('country'),
+        }
+    except Exception:
+        return {
+            'display_name': None,
+            'city': None,
+            'country': None,
+        }
+
+
+def _search_locations(query: str):
+    try:
+        data = _call_nominatim(
+            'search',
+            {
+                'q': query,
+                'format': 'jsonv2',
+                'limit': 5,
+                'addressdetails': 1,
+            },
+        )
+        results = []
+        for item in data:
+            address = item.get('address', {})
+            results.append({
+                'display_name': item.get('display_name'),
+                'lat': float(item.get('lat')),
+                'lon': float(item.get('lon')),
+                'city': address.get('city') or address.get('town') or address.get('village'),
+                'country': address.get('country'),
+            })
+        return results
+    except Exception:
+        return []
+
+
+def _estimate_pv_power_kw(entry: dict):
+    ghi = entry.get('ghi')
+    if ghi is None:
+        return None
+    # Convert W/m2 to kW for a 1 kWp system with 20% efficiency
+    return round((ghi * 0.2) / 1000, 3)
+
+
+def _summarize_daily_energy(forecasts: list, days: int = 7):
+    daily_totals = {}
+    for item in forecasts:
+        period_end = item.get('period_end')
+        if not period_end:
+            continue
+        day_key = period_end.split('T')[0]
+        ghi = item.get('ghi')
+        if ghi is None:
+            continue
+        daily_totals.setdefault(day_key, 0)
+        daily_totals[day_key] += ghi / 1000  # Convert W/m2 to kWh/m2 per hour
+    summary = []
+    for day in sorted(daily_totals.keys())[:days]:
+        summary.append({
+            'date': day,
+            'kwh_per_m2': round(daily_totals[day], 2),
+        })
+    return summary
+
+
+def _fetch_solcast_forecast(lat: float, lon: float):
+    if not SOLCAST_BASE_URL or not SOLCAST_API_KEY:
+        raise RuntimeError('Solcast API is not configured. Set SOLCAST_BASE_URL and SOLCAST_API_KEY.')
+
+    params = {
+        'latitude': lat,
+        'longitude': lon,
+        'format': 'json',
+        'api_key': SOLCAST_API_KEY,
+        'hours': min(SOLCAST_MAX_HOURS, 336),
+    }
+
+    response = requests.get(
+        SOLCAST_BASE_URL,
+        params=params,
+        headers={'Accept': 'application/json'},
+        timeout=20,
+    )
+    response.raise_for_status()
+    data = response.json()
+    forecasts = data.get('forecasts') or data.get('radiation') or []
+    if not forecasts:
+        raise ValueError('Solcast response did not include forecast data.')
+    return forecasts
+
+
+def _build_forecast_payload(lat: float, lon: float, forecasts: list):
+    location_meta = _reverse_geocode(lat, lon)
+    hourly = []
+    for entry in forecasts[:48]:
+        pv_kw = _estimate_pv_power_kw(entry)
+        hourly.append({
+            'time': entry.get('period_end'),
+            'ghi': entry.get('ghi'),
+            'pv_kw': pv_kw,
+            'air_temp': entry.get('air_temp'),
+            'cloud_opacity': entry.get('cloud_opacity'),
+        })
+
+    current_entry = forecasts[0] if forecasts else {}
+    summary = _summarize_daily_energy(forecasts, days=7)
+
+    return {
+        'location': {
+            'lat': lat,
+            'lon': lon,
+            'display_name': location_meta.get('display_name'),
+            'city': location_meta.get('city'),
+            'country': location_meta.get('country'),
+        },
+        'current_conditions': {
+            'ghi': current_entry.get('ghi'),
+            'air_temp': current_entry.get('air_temp'),
+            'cloud_opacity': current_entry.get('cloud_opacity'),
+            'period_end': current_entry.get('period_end'),
+        } if current_entry else {},
+        'hourly_forecast': [entry for entry in hourly if entry.get('time')],
+        'daily_summary': summary,
+        'forecast_length': min(len(forecasts), SOLCAST_MAX_HOURS),
+    }
 
 class LoginView(APIView):
     """
@@ -62,6 +285,74 @@ class LoginView(APIView):
             return Response(
                 {'error': str(e)},
                 status=status.HTTP_401_UNAUTHORIZED
+            )
+
+
+class SolarForecastProxy(APIView):
+    """
+    Proxy Solcast requests to keep API keys server-side and cache responses.
+    """
+
+    def get(self, request):
+        lat = request.query_params.get('lat')
+        lon = request.query_params.get('lon')
+
+        try:
+            lat = float(lat)
+            lon = float(lon)
+        except (TypeError, ValueError):
+            return Response(
+                {'error': 'Valid lat and lon query parameters are required.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            cached = _get_cached_forecast(lat, lon)
+            if cached:
+                payload = copy.deepcopy(cached['data'])
+                payload['cache'] = {
+                    'source': 'cache',
+                    'expires_at': datetime.utcfromtimestamp(cached['expires_at']).isoformat() + 'Z',
+                }
+                return Response(payload)
+
+            forecasts = _fetch_solcast_forecast(lat, lon)
+            payload = _build_forecast_payload(lat, lon, forecasts)
+            payload['cache'] = {
+                'source': 'origin',
+                'expires_at': (datetime.utcnow() + timedelta(seconds=SOLCAST_CACHE_TTL)).isoformat() + 'Z',
+            }
+            _store_forecast_in_cache(lat, lon, copy.deepcopy(payload))
+            return Response(payload)
+        except requests.HTTPError as exc:
+            return Response(
+                {'error': 'Solcast request failed', 'details': str(exc)},
+                status=exc.response.status_code if exc.response else status.HTTP_502_BAD_GATEWAY,
+            )
+        except Exception as exc:
+            return Response(
+                {'error': str(exc)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+
+class GeocodeSearchProxy(APIView):
+    """
+    Lightweight proxy for Nominatim search queries.
+    """
+
+    def get(self, request):
+        query = request.query_params.get('q', '').strip()
+        if len(query) < 3:
+            return Response({'error': 'Query must be at least 3 characters long.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            results = _search_locations(query)
+            return Response({'results': results})
+        except Exception as exc:
+            return Response(
+                {'error': 'Failed to search locations', 'details': str(exc)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
 

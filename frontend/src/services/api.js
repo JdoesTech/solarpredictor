@@ -121,6 +121,20 @@ export const getHealthStatus = async (token) => {
   return response.data;
 };
 
+export const fetchSolarForecast = async ({ lat, lon }, token) => {
+  const response = await api.get(`/forecast/solar?lat=${lat}&lon=${lon}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return response.data;
+};
+
+export const searchLocation = async (query, token) => {
+  const response = await api.get(`/geocode/search?q=${encodeURIComponent(query)}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return response.data?.results || [];
+};
+
 export default api;
 
 

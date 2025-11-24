@@ -17,6 +17,8 @@ urlpatterns = [
     path('', include(router.urls)),
     path('dashboard/stats', views.DashboardStatsView.as_view(), name='dashboard-stats'),
     path('auth/login', views.LoginView.as_view(), name='login'),
+    path('forecast/solar', views.SolarForecastProxy.as_view(), name='solar-forecast'),
+    path('geocode/search', views.GeocodeSearchProxy.as_view(), name='geocode-search'),
 ]
 
 
