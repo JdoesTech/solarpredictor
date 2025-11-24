@@ -2,6 +2,9 @@
 
 A full-stack web application for predicting solar panel energy output based on weather forecasts and solar panel condition data. This project supports SDG 7 (Affordable & Clean Energy) by enabling better planning and maintenance of solar infrastructure.
 
+The motivation for the development of this application is to enable users of solar energy to preempt solar patterns, plan for cloudy/rainy days and maximize on high solar radiation to either bank the excess energy or set it up for commercial supply. 
+In the long run, the combined efforts of this and ther like-minded initiatives is to facilitate the wider adoption of solar energy, which is clean and renewable, leading to the achievement of Sustainable Development Goal 7: Affordable & Clean Energy.
+
 Access the web app through this link : https://solarpredictor-1.onrender.com
 
 ## 🎯 Project Overview
