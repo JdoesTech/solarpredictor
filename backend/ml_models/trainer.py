@@ -157,3 +157,4 @@ class ModelTrainer:
             print(f"Error training model: {str(e)}")
             raise Exception(f"Training failed: {str(e)}")
 
+

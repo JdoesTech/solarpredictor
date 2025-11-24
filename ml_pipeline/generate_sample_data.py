@@ -65,3 +65,4 @@ if __name__ == '__main__':
     print("    -H 'Authorization: Bearer <token>' \\")
     print("    -F 'file=@weather_data.csv'")
 
+

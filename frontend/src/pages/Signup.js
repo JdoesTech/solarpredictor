@@ -1,28 +1,35 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../services/auth';
-import { login } from '../services/api';
 import './Login.css';
 
-function Login() {
+function Signup() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
-  const { signIn } = useAuth();
+  const { signUp } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
-    setLoading(true);
+    setSuccess('');
 
+    if (password !== confirmPassword) {
+      setError('Passwords do not match');
+      return;
+    }
+
+    setLoading(true);
     try {
-      const data = await login(email, password);
-      await signIn(email, password);
-      navigate('/dashboard');
+      await signUp(email, password);
+      setSuccess('Account created! Please confirm your email, then login.');
+      setTimeout(() => navigate('/login'), 2000);
     } catch (err) {
-      setError(err.response?.data?.error || 'Login failed. Please check your credentials.');
+      setError(err.message || 'Signup failed. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -32,7 +39,7 @@ function Login() {
     <div className="login-container">
       <div className="login-card">
         <h1>☀️ Solar Energy Prediction</h1>
-        <h2>Login</h2>
+        <h2>Create an Account</h2>
         <form onSubmit={handleSubmit}>
           <div className="form-group">
             <label>Email</label>
@@ -52,22 +59,28 @@ function Login() {
               required
             />
           </div>
+          <div className="form-group">
+            <label>Confirm Password</label>
+            <input
+              type="password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              required
+            />
+          </div>
           {error && <div className="error">{error}</div>}
+          {success && <div className="success">{success}</div>}
           <button type="submit" className="btn btn-primary" disabled={loading}>
-            {loading ? 'Logging in...' : 'Login'}
+            {loading ? 'Creating account...' : 'Sign Up'}
           </button>
         </form>
         <p className="login-note">
-          Use your Supabase account credentials to login
-        </p>
-        <p className="login-note">
-          New here? <Link to="/signup">Create an account</Link>
+          Already have an account? <Link to="/login">Log in</Link>
         </p>
       </div>
     </div>
   );
 }
 
-export default Login;
-
+export default Signup;
 

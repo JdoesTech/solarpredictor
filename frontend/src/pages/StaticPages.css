@@ -1,0 +1,29 @@
+.static-page {
+  padding-top: 2rem;
+  padding-bottom: 2rem;
+}
+
+.static-page .card {
+  line-height: 1.7;
+}
+
+.static-page h1 {
+  margin-bottom: 1rem;
+}
+
+.static-page ul {
+  margin-left: 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+.contact-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin: 1.5rem 0;
+}
+
+.contact-grid h3 {
+  margin-bottom: 0.25rem;
+}
+

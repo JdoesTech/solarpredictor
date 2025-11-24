@@ -23,3 +23,4 @@ python-dotenv==1.0.0
 # tensorflow==2.15.0  # For CNN models
 # torch==2.1.0  # Alternative ML framework
 
+

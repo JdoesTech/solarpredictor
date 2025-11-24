@@ -141,3 +141,4 @@ CREATE POLICY "Users can update panel_images" ON panel_images FOR UPDATE USING (
 CREATE POLICY "Users can update model_versions" ON model_versions FOR UPDATE USING (auth.role() = 'authenticated');
 CREATE POLICY "Users can update training_jobs" ON training_jobs FOR UPDATE USING (auth.role() = 'authenticated');
 
+

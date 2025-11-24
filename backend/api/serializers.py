@@ -53,3 +53,4 @@ class TrainingJobSerializer(serializers.Serializer):
     completed_at = serializers.DateTimeField(required=False)
     error_message = serializers.CharField(required=False)
 
+

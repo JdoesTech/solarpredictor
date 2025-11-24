@@ -19,3 +19,4 @@ if __name__ == '__main__':
     print(f"MSE: {result['mse']:.4f}")
     print(f"MAE: {result['mae']:.4f}")
 
+

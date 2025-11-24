@@ -2,6 +2,8 @@
 
 A full-stack web application for predicting solar panel energy output based on weather forecasts and solar panel condition data. This project supports SDG 7 (Affordable & Clean Energy) by enabling better planning and maintenance of solar infrastructure.
 
+Access the web app through this link : https://solarpredictor-1.onrender.com
+
 ## 🎯 Project Overview
 
 **Goal**: Forecast energy production from solar panels based on weather forecasts and condition of solar arrays.
@@ -23,7 +25,7 @@ A full-stack web application for predicting solar panel energy output based on w
 │   React Frontend │
 │   (Port 3000)    │
 └────────┬─────────┘
-         │ HTTP/REST
+         │ HTTP/RESt
          │
 ┌────────▼─────────┐
 │  Django Backend  │
@@ -44,8 +46,8 @@ A full-stack web application for predicting solar panel energy output based on w
 
 ## 🛠️ Tech Stack
 
-- **Backend**: Django 4.x + Django REST Framework
-- **Frontend**: React 18.x + React Router
+- **Backend**: Django 4 + Django REST Framework
+- **Frontend**: React 18 + React Router
 - **Database**: Supabase (PostgreSQL)
 - **Authentication**: JWT (via Supabase)
 - **ML**: scikit-learn, TensorFlow/Keras (optional for CNN)
@@ -54,7 +56,7 @@ A full-stack web application for predicting solar panel energy output based on w
 ## 📁 Project Structure
 
 ```
-Finito/
+solarpredictor/
 ├── backend/                 # Django backend
 │   ├── solar_app/          # Main Django app
 │   ├── ml_models/          # ML training and prediction
@@ -82,7 +84,7 @@ Finito/
 
 ### Prerequisites
 
-- Python 3.9+
+- Python 3.10
 - Node.js 16+
 - Supabase account (free tier)
 
@@ -155,7 +157,50 @@ REACT_APP_SUPABASE_URL=your_supabase_url
 REACT_APP_SUPABASE_ANON_KEY=your_supabase_anon_key
 ```
 
+## 🚢 Production Configuration
+
+When moving from local development to production, adjust the following settings:
+
+1. **Django (`backend/solar_app/settings.py`)**
+   - Set `DEBUG = False`
+   - Update `ALLOWED_HOSTS` with your domain(s), i.e. `['api.yourdomain.com']`
+   - Enable security middleware settings:
+     ```python
+     SECURE_SSL_REDIRECT = True
+     SESSION_COOKIE_SECURE = True
+     CSRF_COOKIE_SECURE = True
+     SECURE_HSTS_SECONDS = 31536000  # this is equvalent to 1 year
+     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+     SECURE_HSTS_PRELOAD = True
+     SECURE_BROWSER_XSS_FILTER = True
+     SECURE_CONTENT_TYPE_NOSNIFF = True
+     ```
+   - Configure static files:
+     ```python
+     STATIC_ROOT = BASE_DIR / 'staticfiles'
+     ```
+   - Generate a new strong `SECRET_KEY` and store it via environment variables.
+   You can do so by running : python -c "import secrets; print(secrets.token_urlsafe())" 
+
+2. **Environment Variables**
+   - Provide production Supabase credentials, database host, and any storage keys in your hosting provider’s secrets manager.
+   - Update `REACT_APP_API_URL` so the frontend calls the deployed backend HTTPS endpoint i.e. your backend url
+
+3. **Frontend Build**
+   - Add `.env.production` (or hosting equivalent) with production API URLs.
+   - Run `npm run build` before deploying to static hosts (Vercel, Netlify, etc.).
+
+4. **Supabase**
+   - Add your deployed frontend domain under **Authentication → URL Configuration** and **API → CORS**.
+   - Review Row Level Security policies before going live.
+
+5. **Process Manager**
+   - Install `gunicorn` (already listed in `backend/requirements.txt`) and start the Django app with `gunicorn solar_app.wsgi:application --bind 0.0.0.0:$PORT`.
+
 ## 📝 License
 
-See LICENSE file for details.
+As of this moment, this projected is released under the MIT License.
+More information to be found in the License file.
+
+This project is hosted on Render, with the backend as a Web service and the frontend as a Static service
 

@@ -133,3 +133,4 @@ class SolarEnergyPredictor:
         
         return predictions
 
+

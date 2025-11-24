@@ -9,3 +9,4 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'solar_app.settings')
 
 application = get_wsgi_application()
 
+

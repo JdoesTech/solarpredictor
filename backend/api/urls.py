@@ -19,3 +19,4 @@ urlpatterns = [
     path('auth/login', views.LoginView.as_view(), name='login'),
 ]
 
+
