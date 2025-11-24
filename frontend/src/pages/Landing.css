@@ -87,3 +87,29 @@
   color: #1b1f3b;
 }
 
+.landing-data-focus {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 3rem;
+}
+
+.landing-data-card {
+  background: #0f172a;
+  color: #e2e8f0;
+  border-radius: 16px;
+  padding: 1.75rem;
+  box-shadow: 0 15px 35px rgba(15, 23, 42, 0.35);
+}
+
+.landing-data-card h3 {
+  margin-bottom: 0.75rem;
+  color: #facc15;
+}
+
+.landing-data-card p {
+  margin: 0;
+  line-height: 1.6;
+}
+
+

@@ -41,9 +41,18 @@ function Predictions() {
     confidence: pred.confidence_score,
   }));
 
+  const latestPrediction = predictions[predictions.length - 1];
+
   return (
     <div className="container">
       <h1>Predictions</h1>
+
+      <div className="info-banner">
+        <strong>Trained model output.</strong>
+        The charts below stream from stored inference results. Adjust the horizon to slice
+        through the existing dataset. Uploads and retraining remain optional for future
+        improvements.
+      </div>
 
       <div className="card">
         <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem', alignItems: 'center' }}>
@@ -80,6 +89,17 @@ function Predictions() {
             </select>
           )}
         </div>
+
+        {latestPrediction && (
+          <div style={{ marginBottom: '1rem', color: '#555', fontSize: '0.95rem' }}>
+            Active model: <strong>{latestPrediction.model_version || 'N/A'}</strong> • Confidence avg:{' '}
+            <strong>
+              {typeof latestPrediction.confidence_score === 'number'
+                ? `${(latestPrediction.confidence_score * 100).toFixed(1)}%`
+                : 'N/A'}
+            </strong>
+          </div>
+        )}
 
         {error && <div className="error">{error}</div>}
 
@@ -126,5 +146,6 @@ function Predictions() {
 }
 
 export default Predictions;
+
 
 

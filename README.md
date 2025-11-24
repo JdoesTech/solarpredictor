@@ -118,7 +118,7 @@ npm start
 3. Update `backend/solar_app/settings.py` with your Supabase credentials
 4. Run the SQL schema from `docs/supabase_schema.sql`
 
-## 📊 Features
+## Features
 
 - ✅ Admin authentication (JWT-based via Supabase)
 - ✅ Dashboard with predicted vs actual output
@@ -127,7 +127,7 @@ npm start
 - ✅ Prediction/report page (hourly & daily forecast)
 - ✅ System health panel (panel condition classifier)
 
-## 📚 Open Datasets
+## Open Datasets
 
 For training the ML models, you can use these free datasets:
 
@@ -135,13 +135,13 @@ For training the ML models, you can use these free datasets:
 2. **Weather Data**: [OpenWeatherMap Historical Data](https://openweathermap.org/history)
 3. **Solar Panel Images**: [Solar Panel Defect Detection Dataset](https://www.kaggle.com/datasets/dataclusterlabs/solar-panel-defect-detection)
 
-## 📖 Documentation
+## Documentation
 
 - [System Architecture](docs/architecture.md)
 - [Database Schema (ERD)](docs/erd.md)
 - [API Documentation](docs/api_docs.md)
 
-## 🔐 Environment Variables
+## Environment Variables
 
 Create `.env` files in both `backend/` and `frontend/`:
 
@@ -160,7 +160,7 @@ REACT_APP_SUPABASE_URL=your_supabase_url
 REACT_APP_SUPABASE_ANON_KEY=your_supabase_anon_key
 ```
 
-## 🚢 Production Configuration
+## Production Configuration
 
 When moving from local development to production, adjust the following settings:
 
@@ -200,7 +200,7 @@ When moving from local development to production, adjust the following settings:
 5. **Process Manager**
    - Install `gunicorn` (already listed in `backend/requirements.txt`) and start the Django app with `gunicorn solar_app.wsgi:application --bind 0.0.0.0:$PORT`.
 
-## 📝 License
+##  License
 
 As of this moment, this projected is released under the MIT License.
 More information to be found in the License file.

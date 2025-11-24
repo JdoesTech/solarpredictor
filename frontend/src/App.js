@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { AuthProvider, useAuth } from './services/auth';
 import Navbar from './components/Navbar';
 import Landing from './pages/Landing';
@@ -24,58 +24,37 @@ function PrivateRoute({ children }) {
   return user ? children : <Navigate to="/login" />;
 }
 
+function ProtectedLayout() {
+  return (
+    <PrivateRoute>
+      <>
+        <Navbar />
+        <main className="app-shell">
+          <Outlet />
+        </main>
+      </>
+    </PrivateRoute>
+  );
+}
+
 function App() {
   return (
     <AuthProvider>
       <Router>
         <div className="App">
-          <Navbar />
           <Routes>
             <Route path="/" element={<Landing />} />
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
             <Route path="/about" element={<About />} />
             <Route path="/contact" element={<Contact />} />
-            <Route
-              path="/dashboard"
-              element={
-                <PrivateRoute>
-                  <Dashboard />
-                </PrivateRoute>
-              }
-            />
-            <Route
-              path="/upload"
-              element={
-                <PrivateRoute>
-                  <Upload />
-                </PrivateRoute>
-              }
-            />
-            <Route
-              path="/training"
-              element={
-                <PrivateRoute>
-                  <Training />
-                </PrivateRoute>
-              }
-            />
-            <Route
-              path="/predictions"
-              element={
-                <PrivateRoute>
-                  <Predictions />
-                </PrivateRoute>
-              }
-            />
-            <Route
-              path="/health"
-              element={
-                <PrivateRoute>
-                  <Health />
-                </PrivateRoute>
-              }
-            />
+            <Route element={<ProtectedLayout />}>
+              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/upload" element={<Upload />} />
+              <Route path="/training" element={<Training />} />
+              <Route path="/predictions" element={<Predictions />} />
+              <Route path="/health" element={<Health />} />
+            </Route>
             <Route path="*" element={<Navigate to="/" />} />
           </Routes>
         </div>

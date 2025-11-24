@@ -141,6 +141,12 @@ function Upload() {
     <div className="container">
       <h1>Upload Data</h1>
 
+      <div className="info-banner">
+        <strong>Optional ingestion.</strong>
+        The platform already serves dashboards from trained datasets. Use these uploaders only
+        when you have vetted CSVs or imagery that should influence the next training cycle.
+      </div>
+
       <div style={{ display: 'flex', gap: '1rem', marginBottom: '2rem', borderBottom: '1px solid #ddd' }}>
         <button
           className={`btn ${activeTab === 'weather' ? 'btn-primary' : 'btn-secondary'}`}
@@ -205,5 +211,6 @@ function Upload() {
 }
 
 export default Upload;
+
 
 

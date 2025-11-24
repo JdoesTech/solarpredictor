@@ -1,8 +1,35 @@
 -- Supabase Database Schema for Solar Energy Prediction App
 -- Run this SQL in your Supabase SQL Editor
 
--- Enable UUID extension
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
+-- Profiles Table to decouple app references from auth.users
+CREATE TABLE IF NOT EXISTS profiles (
+    id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+    display_name TEXT,
+    role VARCHAR(50) DEFAULT 'viewer',
+    organization TEXT,
+    metadata JSONB DEFAULT '{}'::jsonb,
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Auto-create profile when a new auth user registers
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS TRIGGER AS $$
+BEGIN
+    INSERT INTO public.profiles (id, display_name, role)
+    VALUES (NEW.id, COALESCE(NEW.raw_user_meta_data ->> 'full_name', NEW.email), 'viewer')
+    ON CONFLICT (id) DO UPDATE SET updated_at = NOW();
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER
+SET search_path = public;
+
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+CREATE TRIGGER on_auth_user_created
+AFTER INSERT ON auth.users
+FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
 
 -- Weather Data Table
 CREATE TABLE IF NOT EXISTS weather_data (
@@ -52,7 +79,7 @@ CREATE TABLE IF NOT EXISTS panel_images (
     panel_id VARCHAR(50),
     condition_score DECIMAL(5,2) CHECK (condition_score >= 0 AND condition_score <= 100),
     condition_status VARCHAR(20) CHECK (condition_status IN ('excellent', 'good', 'fair', 'poor')),
-    uploaded_by UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+    uploaded_by UUID REFERENCES profiles(id) ON DELETE SET NULL,
     uploaded_at TIMESTAMP DEFAULT NOW(),
     analyzed_at TIMESTAMP
 );
@@ -69,7 +96,7 @@ CREATE TABLE IF NOT EXISTS model_versions (
     mse DECIMAL(10,4),
     is_active BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT NOW(),
-    created_by UUID REFERENCES auth.users(id) ON DELETE SET NULL
+    created_by UUID REFERENCES profiles(id) ON DELETE SET NULL
 );
 
 -- Training Jobs Table
@@ -81,7 +108,7 @@ CREATE TABLE IF NOT EXISTS training_jobs (
     started_at TIMESTAMP,
     completed_at TIMESTAMP,
     error_message TEXT,
-    created_by UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+    created_by UUID REFERENCES profiles(id) ON DELETE SET NULL,
     created_at TIMESTAMP DEFAULT NOW()
 );
 
@@ -116,6 +143,7 @@ ALTER TABLE predictions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE panel_images ENABLE ROW LEVEL SECURITY;
 ALTER TABLE model_versions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE training_jobs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
 
 -- Policy: Users can read all data
 CREATE POLICY "Users can read weather_data" ON weather_data FOR SELECT USING (auth.role() = 'authenticated');
@@ -132,6 +160,7 @@ CREATE POLICY "Users can insert predictions" ON predictions FOR INSERT WITH CHEC
 CREATE POLICY "Users can insert panel_images" ON panel_images FOR INSERT WITH CHECK (auth.role() = 'authenticated');
 CREATE POLICY "Users can insert model_versions" ON model_versions FOR INSERT WITH CHECK (auth.role() = 'authenticated');
 CREATE POLICY "Users can insert training_jobs" ON training_jobs FOR INSERT WITH CHECK (auth.role() = 'authenticated');
+CREATE POLICY "Users can insert profiles" ON profiles FOR INSERT WITH CHECK (auth.uid() = id);
 
 -- Policy: Users can update their own data
 CREATE POLICY "Users can update weather_data" ON weather_data FOR UPDATE USING (auth.role() = 'authenticated');
@@ -140,5 +169,10 @@ CREATE POLICY "Users can update predictions" ON predictions FOR UPDATE USING (au
 CREATE POLICY "Users can update panel_images" ON panel_images FOR UPDATE USING (uploaded_by = auth.uid());
 CREATE POLICY "Users can update model_versions" ON model_versions FOR UPDATE USING (auth.role() = 'authenticated');
 CREATE POLICY "Users can update training_jobs" ON training_jobs FOR UPDATE USING (auth.role() = 'authenticated');
+CREATE POLICY "Users can update profiles" ON profiles FOR UPDATE USING (auth.uid() = id);
+
+-- Allow users to view profiles
+CREATE POLICY "Profiles are readable by authenticated users" ON profiles FOR SELECT USING (auth.role() = 'authenticated');
+
 
 

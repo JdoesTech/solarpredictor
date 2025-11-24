@@ -20,7 +20,7 @@ function Navbar() {
   return (
     <nav className="navbar">
       <div className="navbar-container">
-        <Link to="/dashboard" className="navbar-brand">
+        <Link to="/" className="navbar-brand">
           ☀️ Solar Energy Prediction
         </Link>
         <div className="navbar-links">
@@ -40,5 +40,6 @@ function Navbar() {
 }
 
 export default Navbar;
+
 
 

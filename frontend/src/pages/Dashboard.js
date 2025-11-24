@@ -38,9 +38,24 @@ function Dashboard() {
     actual: pred.actual_output_kwh || null,
   })) || [];
 
+  const trainingWindow = {
+    start: stats?.active_model?.training_data_start
+      ? stats.active_model.training_data_start.split('T')[0]
+      : 'N/A',
+    end: stats?.active_model?.training_data_end
+      ? stats.active_model.training_data_end.split('T')[0]
+      : 'N/A',
+  };
+
   return (
     <div className="container">
       <h1>Dashboard</h1>
+
+      <div className="info-banner">
+        <strong>Live inference stream.</strong>
+        Metrics, charts, and comparisons below are sourced from the predictions produced by the
+        currently active trained model. Uploads and retraining simply feed the next refresh.
+      </div>
       
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
         <div className="card">
@@ -60,6 +75,11 @@ function Dashboard() {
           <p style={{ fontSize: '1rem', color: '#666' }}>
             {stats?.active_model?.version_name || 'No active model'}
           </p>
+          {stats?.active_model && (
+            <p style={{ marginTop: '0.5rem', color: '#999', fontSize: '0.9rem' }}>
+              Window: {trainingWindow.start} → {trainingWindow.end}
+            </p>
+          )}
         </div>
       </div>
 
@@ -82,5 +102,6 @@ function Dashboard() {
 }
 
 export default Dashboard;
+
 
 

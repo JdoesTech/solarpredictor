@@ -122,3 +122,4 @@ class FileHandler:
             raise Exception(f"Error saving image: {str(e)}")
 
 
+

@@ -138,7 +138,12 @@ REACT_APP_SUPABASE_ANON_KEY=your-supabase-key
    - Settings → API → CORS
    - Add your frontend domain: `https://your-frontend.vercel.app`
 
-2. **Update RLS Policies** (if needed):
+2. **Create application profiles + run schema**:
+   - Open the SQL Editor in Supabase
+   - Paste `docs/supabase_schema.sql` so the new `profiles` table and foreign keys replace any direct `auth.users` references
+   - Verify that the `profiles` table is populated automatically for existing users (`handle_new_user` trigger)
+
+3. **Update RLS Policies** (if needed):
    - Ensure production users can access data
    - Test authentication flow
 
@@ -308,5 +313,6 @@ When you outgrow free tiers:
 - Vercel Docs: https://vercel.com/docs
 - Render Docs: https://render.com/docs
 - Supabase Docs: https://supabase.com/docs
+
 
 

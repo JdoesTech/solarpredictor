@@ -54,3 +54,4 @@ class TrainingJobSerializer(serializers.Serializer):
     error_message = serializers.CharField(required=False)
 
 
+

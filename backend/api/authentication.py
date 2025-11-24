@@ -54,3 +54,4 @@ class SupabaseJWTAuthentication(authentication.BaseAuthentication):
             raise exceptions.AuthenticationFailed(f'Authentication failed: {str(e)}')
 
 
+

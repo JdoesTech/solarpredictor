@@ -203,13 +203,40 @@ class ImageUploadViewSet(viewsets.ViewSet):
 
 class PredictionViewSet(viewsets.ViewSet):
     """
-    Handle predictions
+    Serve pre-computed predictions first, fall back to on-demand inference.
     """
+
+    def _get_supabase_client(self) -> Client:
+        return create_client(settings.SUPABASE_URL, settings.SUPABASE_KEY)
+
+    def _fetch_trained_predictions(self, prediction_type: str, limit: int):
+        """
+        Pull the latest stored predictions produced by the active model.
+        """
+        supabase = self._get_supabase_client()
+        result = (
+            supabase.table('predictions')
+            .select('*')
+            .eq('prediction_type', prediction_type)
+            .order('timestamp', desc=True)
+            .limit(limit)
+            .execute()
+        )
+
+        data = result.data or []
+        # Return chronological order for charts
+        return list(reversed(data))
+
     @action(detail=False, methods=['get'])
     def daily(self, request):
-        """Get daily predictions"""
+        """Get daily predictions sourced from trained data."""
         try:
             days = int(request.query_params.get('days', 7))
+            stored_predictions = self._fetch_trained_predictions('daily', days)
+
+            if stored_predictions:
+                return Response(stored_predictions)
+
             predictor = SolarEnergyPredictor()
             predictions = predictor.predict_daily(days=days)
             return Response(predictions)
@@ -221,9 +248,14 @@ class PredictionViewSet(viewsets.ViewSet):
     
     @action(detail=False, methods=['get'])
     def hourly(self, request):
-        """Get hourly predictions"""
+        """Get hourly predictions sourced from trained data."""
         try:
             hours = int(request.query_params.get('hours', 24))
+            stored_predictions = self._fetch_trained_predictions('hourly', hours)
+
+            if stored_predictions:
+                return Response(stored_predictions)
+
             predictor = SolarEnergyPredictor()
             predictions = predictor.predict_hourly(hours=hours)
             return Response(predictions)

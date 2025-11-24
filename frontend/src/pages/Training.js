@@ -44,6 +44,13 @@ function Training() {
     <div className="container">
       <h1>Model Training</h1>
 
+      <div className="info-banner">
+        <strong>Inference first.</strong>
+        The UI already uses the latest trained outputs stored in Supabase. Only kick off a new
+        training job when you have additional curated datasets or you need to promote a new
+        model version.
+      </div>
+
       <div className="card">
         <h2>Train New Model</h2>
         <form onSubmit={handleTrain}>
@@ -112,5 +119,6 @@ function Training() {
 }
 
 export default Training;
+
 
 

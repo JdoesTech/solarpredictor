@@ -13,8 +13,10 @@ function Landing() {
           <p className="landing-badge">SDG 7 • Affordable & Clean Energy</p>
           <h1>Predict Solar Output with Confidence</h1>
           <p>
-            Upload weather forecasts and panel images to forecast solar production,
-            plan maintenance, and maximize ROI across your solar portfolio.
+            The platform streams insights from our curated, trained models so you can
+            monitor generation, health, and risk without rebuilding pipelines every time.
+            Uploads are still available when you want to expand the data set, but the UI
+            defaults to production-ready intelligence.
           </p>
           <div className="landing-cta">
             {user ? (
@@ -36,13 +38,31 @@ function Landing() {
         <div className="landing-hero-card">
           <h3>Why Solar Analytics?</h3>
           <ul>
-            <li>⚡ Hourly and daily production forecasts</li>
-            <li>🛰️ Weather + image-driven predictions</li>
+            <li>⚡ Hourly and daily production forecasts from trained data</li>
+            <li>🛰️ Weather + image-driven predictions, ready to consume</li>
             <li>🔧 Maintenance alerts for panel health</li>
             <li>📈 Improved grid planning and ROI</li>
           </ul>
         </div>
       </header>
+
+      <section className="landing-data-focus">
+        <div className="landing-data-card">
+          <h3>Pre-trained Intelligence</h3>
+          <p>
+            Dashboards, predictions, and health checks read directly from vetted model
+            outputs stored in Supabase. Stay confident that stakeholders see the same
+            trained truth everywhere in the app.
+          </p>
+        </div>
+        <div className="landing-data-card">
+          <h3>Optional Data Expansion</h3>
+          <p>
+            Need to push new CSVs or imagery? Upload flows and retraining remain available,
+            but your analysts can focus on consuming results, not feeding pipelines.
+          </p>
+        </div>
+      </section>
 
       <section className="landing-links">
         <Link to="/about" className="landing-link-card">
@@ -59,4 +79,5 @@ function Landing() {
 }
 
 export default Landing;
+
 

@@ -3,6 +3,26 @@
   background-color: #f5f5f5;
 }
 
+.app-shell {
+  padding: 2rem 0;
+}
+
+.info-banner {
+  border-radius: 8px;
+  padding: 1rem 1.25rem;
+  border: 1px solid #c8e6c9;
+  background-color: #f1fff2;
+  color: #1b5e20;
+  margin-bottom: 1.5rem;
+  display: flex;
+  gap: 0.5rem;
+  align-items: flex-start;
+}
+
+.info-banner strong {
+  color: #1b5e20;
+}
+
 .loading {
   display: flex;
   justify-content: center;
@@ -126,5 +146,6 @@
 .table tr:hover {
   background-color: #f9f9f9;
 }
+
 
 
