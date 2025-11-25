@@ -294,16 +294,33 @@ class SolarForecastProxy(APIView):
     """
 
     def get(self, request):
-        lat = request.query_params.get('lat')
-        lon = request.query_params.get('lon')
+        lat_str = request.query_params.get('lat')
+        lon_str = request.query_params.get('lon')
+
+        if not lat_str or not lon_str:
+            return Response(
+                {'error': 'Missing lat or lon parameters'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
         try:
-            lat = float(lat)
-            lon = float(lon)
+            lat = float(lat_str)
+            lon = float(lon_str)
         except (TypeError, ValueError):
             return Response(
-                {'error': 'Valid lat and lon query parameters are required.'},
-                status=status.HTTP_400_BAD_REQUEST,
+                {'error': f'Invalid coordinates: lat={lat_str}, lon={lon_str}'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        if not (-90 <= lat <= 90):
+            return Response(
+                {'error': f'Latitude out of range: {lat}'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        if not (-180 <= lon <= 180):
+            return Response(
+                {'error': f'Longitude out of range: {lon}'},
+                status=status.HTTP_400_BAD_REQUEST
             )
 
         try:
