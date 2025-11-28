@@ -17,7 +17,8 @@ console.log('API BASE URL:', api.defaults.baseURL);
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('token');
-    if (token) {
+    // Only add token if it exists and is not null/undefined
+    if (token && token !== 'null' && token !== 'undefined') {
       config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
@@ -37,9 +38,11 @@ export const login = async (email, password) => {
 };
 
 export const getDashboardStats = async (token) => {
-  const response = await api.get('/dashboard/stats', {  
-    headers: { Authorization: `Bearer ${token}` },
-  });
+  const config = {};
+  if (token && token !== 'null' && token !== 'undefined') {
+    config.headers = { Authorization: `Bearer ${token}` };
+  }
+  const response = await api.get('/dashboard/stats', config);
   return response.data;
 };
 
@@ -124,16 +127,20 @@ export const getHealthStatus = async (token) => {
 };
 
 export const fetchSolarForecast = async ({ lat, lon }, token) => {
-  const response = await api.get(`/forecast/solar?lat=${lat}&lon=${lon}`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
+  const config = {};
+  if (token && token !== 'null' && token !== 'undefined') {
+    config.headers = { Authorization: `Bearer ${token}` };
+  }
+  const response = await api.get(`/forecast/solar?lat=${lat}&lon=${lon}`, config);
   return response.data;
 };
 
 export const searchLocation = async (query, token) => {
-  const response = await api.get(`/geocode/search?q=${encodeURIComponent(query)}`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
+  const config = {};
+  if (token && token !== 'null' && token !== 'undefined') {
+    config.headers = { Authorization: `Bearer ${token}` };
+  }
+  const response = await api.get(`/geocode/search?q=${encodeURIComponent(query)}`, config);
   return response.data?.results || [];
 };
 

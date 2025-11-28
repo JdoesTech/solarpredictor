@@ -217,6 +217,14 @@
   margin-top: 0.35rem;
   font-size: 1.3rem;
   font-weight: 600;
+  color: var(--text-color);
+}
+
+.metric-subtitle {
+  margin-top: 0.25rem;
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  font-weight: normal;
 }
 
 .chart-card {

@@ -26,11 +26,9 @@ function Signup() {
     setLoading(true);
     try {
       await signUp(email, password);
-      setSuccess('Account created! Please confirm your email, then login.');
-      setTimeout(() => navigate('/login'), 2000);
+      navigate('/email-confirmation');
     } catch (err) {
       setError(err.message || 'Signup failed. Please try again.');
-    } finally {
       setLoading(false);
     }
   };

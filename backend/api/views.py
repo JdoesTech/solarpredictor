@@ -251,7 +251,8 @@ class LoginView(APIView):
     """
     Login endpoint - delegates to Supabase Auth
     """
-    permission_classes = []
+    permission_classes = [AllowAny]
+    authentication_classes = []
     
     def post(self, request):
         email = request.data.get('email')
@@ -292,6 +293,7 @@ class LoginView(APIView):
 
 class SolarForecastProxy(APIView):
     permission_classes = [AllowAny]
+    authentication_classes = []
     
     def get(self, request):
         print(f"SOLAR FORECAST CALLED: {request.query_params}")
@@ -301,68 +303,170 @@ class SolarForecastProxy(APIView):
         
         print(f"RAW COORDS: lat='{lat_str}', lon='{lon_str}'")
         
+        # Validate parameters are provided
         if not lat_str or not lon_str:
             print("ERROR: Missing lat/lon")
-            return JsonResponse({'error': 'Missing lat or lon parameters'}, status=400)
+            return Response(
+                {'error': 'Missing required parameters', 'details': 'Both lat and lon query parameters are required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
         
+        # Validate and parse coordinates
         try:
             lat = float(lat_str)
             lon = float(lon_str)
             print(f"PARSED: lat={lat}, lon={lon}")
-        except (ValueError, TypeError):
-            print(f"ERROR: Invalid coords lat='{lat_str}', lon='{lon_str}'")
-            return JsonResponse({'error': f'Invalid lat/lon: {lat_str}/{lon_str}'}, status=400)
+        except (ValueError, TypeError) as e:
+            print(f"ERROR: Invalid coordinate format lat='{lat_str}', lon='{lon_str}'")
+            return Response(
+                {
+                    'error': 'Invalid coordinate format',
+                    'details': f'Could not parse coordinates: lat="{lat_str}", lon="{lon_str}". Expected numeric values.',
+                    'received': {'lat': lat_str, 'lon': lon_str}
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
         
+        # Validate coordinate ranges
+        if not (-90 <= lat <= 90):
+            print(f"ERROR: Latitude out of range: {lat}")
+            return Response(
+                {
+                    'error': 'Latitude out of valid range',
+                    'details': f'Latitude must be between -90 and 90 degrees. Received: {lat}',
+                    'received': lat,
+                    'valid_range': {'min': -90, 'max': 90}
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        if not (-180 <= lon <= 180):
+            print(f"ERROR: Longitude out of range: {lon}")
+            return Response(
+                {
+                    'error': 'Longitude out of valid range',
+                    'details': f'Longitude must be between -180 and 180 degrees. Received: {lon}',
+                    'received': lon,
+                    'valid_range': {'min': -180, 'max': 180}
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
-        SOLCAST_KEY = os.getenv('SOLCAST_API_KEY', '')  
+        # Validate API key is configured
+        SOLCAST_KEY = os.getenv('SOLCAST_API_KEY', '')
         if not SOLCAST_KEY:
-            print("ERROR: No SOLCAST_API_KEY")
-            return JsonResponse({'error': 'Solcast API key missing'}, status=500)
+            print("ERROR: No SOLCAST_API_KEY configured")
+            return Response(
+                {
+                    'error': 'Solcast API key not configured',
+                    'details': 'The SOLCAST_API_KEY environment variable is not set on the server'
+                },
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
         
-        url = 'https://api.solcast.com.au/radiation/forecasts'
-        params = {
-            'latitude': lat,
-            'longitude': lon,
-            'api_key': SOLCAST_KEY,
-            'format': 'json'
-        }
-        
-        print(f"CALLING SOLCAST: {url}")
-        
+        # Check cache first
         try:
-            response = requests.get(url, params=params, timeout=15)
-            print(f"SOLCAST STATUS: {response.status_code}")
-            
-            if response.status_code != 200:
-                print(f"SOLCAST ERROR: {response.text[:200]}")
-                return JsonResponse({
-                    'error': 'Solcast API failed',
-                    'status': response.status_code,
-                    'details': response.text[:300]
-                }, status=response.status_code)
-            
-            data = response.json()
-            print(f"SOLCAST SUCCESS: {len(data.get('forecasts', []))} forecasts")
-            
-            return JsonResponse({
-                'success': True,
-                'lat': lat,
-                'lon': lon,
-                'forecasts': data.get('forecasts', [])[:48],  # First 48 hours
-                'message': 'Solcast working perfectly!'
-            })
-            
+            cached = _get_cached_forecast(lat, lon)
+            if cached:
+                print(f"CACHE HIT for {lat}, {lon}")
+                payload = copy.deepcopy(cached['data'])
+                payload['cache'] = {
+                    'source': 'cache',
+                    'expires_at': datetime.utcfromtimestamp(cached['expires_at']).isoformat() + 'Z',
+                }
+                return Response(payload)
         except Exception as e:
-            print(f"CRASH: {type(e).__name__}: {e}")
-            return JsonResponse({'error': f'Server error: {str(e)}'}, status=500)
+            print(f"WARNING: Cache retrieval failed: {type(e).__name__}: {e}")
+            # Continue to fetch fresh data if cache fails
+        
+        # Fetch fresh forecast data
+        try:
+            forecasts = _fetch_solcast_forecast(lat, lon)
+            print(f"SOLCAST SUCCESS: {len(forecasts)} forecasts retrieved")
+            
+            # Build the payload using the helper function
+            payload = _build_forecast_payload(lat, lon, forecasts)
+            payload['cache'] = {
+                'source': 'origin',
+                'expires_at': (datetime.utcnow() + timedelta(seconds=SOLCAST_CACHE_TTL)).isoformat() + 'Z',
+            }
+            
+            # Store in cache (use deepcopy to avoid reference issues)
+            try:
+                _store_forecast_in_cache(lat, lon, copy.deepcopy(payload))
+            except Exception as e:
+                print(f"WARNING: Cache storage failed: {type(e).__name__}: {e}")
+                # Continue even if cache storage fails
+            
+            return Response(payload)
+            
+        except requests.HTTPError as exc:
+            print(f"SOLCAST HTTP ERROR: {exc.response.status_code if exc.response else 'No response'}: {exc}")
+            error_details = {
+                'error': 'Solcast API request failed',
+                'details': str(exc),
+            }
+            if exc.response:
+                try:
+                    error_details['solcast_response'] = exc.response.text[:500]
+                    error_details['status_code'] = exc.response.status_code
+                except:
+                    pass
+            return Response(
+                error_details,
+                status=exc.response.status_code if exc.response else status.HTTP_502_BAD_GATEWAY
+            )
+        except requests.RequestException as exc:
+            print(f"SOLCAST REQUEST ERROR: {type(exc).__name__}: {exc}")
+            return Response(
+                {
+                    'error': 'Network error while contacting Solcast API',
+                    'details': f'{type(exc).__name__}: {str(exc)}',
+                    'suggestion': 'Please check your internet connection and try again'
+                },
+                status=status.HTTP_502_BAD_GATEWAY
+            )
+        except ValueError as exc:
+            print(f"SOLCAST DATA ERROR: {exc}")
+            return Response(
+                {
+                    'error': 'Invalid data received from Solcast API',
+                    'details': str(exc),
+                    'suggestion': 'The Solcast API response format may have changed'
+                },
+                status=status.HTTP_502_BAD_GATEWAY
+            )
+        except RuntimeError as exc:
+            print(f"SOLCAST CONFIGURATION ERROR: {exc}")
+            return Response(
+                {
+                    'error': 'Solcast API configuration error',
+                    'details': str(exc),
+                    'suggestion': 'Please contact the administrator'
+                },
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+        except Exception as exc:
+            print(f"UNEXPECTED ERROR: {type(exc).__name__}: {exc}")
+            import traceback
+            traceback.print_exc()
+            return Response(
+                {
+                    'error': 'An unexpected error occurred',
+                    'details': f'{type(exc).__name__}: {str(exc)}',
+                    'suggestion': 'Please try again later or contact support if the issue persists'
+                },
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
 
 class GeocodeSearchProxy(APIView):
     """
     Lightweight proxy for Nominatim search queries.
     """
-
-    permission_classes= []
+    permission_classes = [AllowAny]
+    authentication_classes = []
+    
     def get(self, request):
         query = request.query_params.get('q', '').strip()
         if len(query) < 3:
@@ -382,7 +486,9 @@ class DashboardStatsView(APIView):
     """
     Dashboard statistics endpoint
     """
-    permission_classes= []
+    permission_classes = [AllowAny]
+    authentication_classes = []
+    
     def get(self, request):
         try:
             supabase: Client = create_client(settings.SUPABASE_URL, settings.SUPABASE_KEY)

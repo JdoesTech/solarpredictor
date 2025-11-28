@@ -100,13 +100,19 @@ function Dashboard() {
 
     try {
       const data = await fetchSolarForecast({ lat, lon }, token);
+      console.log('Forecast data received:', data);
+      console.log('Current conditions:', data.current_conditions);
+      console.log('Hourly forecast count:', data.hourly_forecast?.length);
+      console.log('Daily summary count:', data.daily_summary?.length);
       setForecast(data);
       setSheetOpen(true);
       if (mapRef.current) {
         mapRef.current.flyTo([lat, lon], Math.max(mapRef.current.getZoom(), 5), { duration: 0.6 });
       }
     } catch (err) {
-      const message = err.response?.data?.error || 'Unable to fetch Solcast data. Try another point.';
+      console.error('Forecast fetch error:', err);
+      console.error('Error response:', err.response?.data);
+      const message = err.response?.data?.error || err.response?.data?.details || 'Unable to fetch Solcast data. Try another point.';
       setForecastError(message);
     } finally {
       setForecastLoading(false);
@@ -247,16 +253,50 @@ function Dashboard() {
             <div className="metric-card">
               <p className="metric-label">Current GHI</p>
               <p className="metric-value">{formatNumber(forecast.current_conditions?.ghi, 0)} W/m²</p>
+              {forecast.current_conditions?.ghi !== null && forecast.current_conditions?.ghi !== undefined && (
+                <p className="metric-subtitle">Global Horizontal Irradiance</p>
+              )}
             </div>
             <div className="metric-card">
               <p className="metric-label">Air Temp</p>
               <p className="metric-value">{formatNumber(forecast.current_conditions?.air_temp, 1)}°C</p>
+              {forecast.current_conditions?.air_temp !== null && forecast.current_conditions?.air_temp !== undefined && (
+                <p className="metric-subtitle">Ambient Temperature</p>
+              )}
             </div>
             <div className="metric-card">
               <p className="metric-label">Cloud Opacity</p>
               <p className="metric-value">{formatNumber(forecast.current_conditions?.cloud_opacity, 0)}%</p>
+              {forecast.current_conditions?.cloud_opacity !== null && forecast.current_conditions?.cloud_opacity !== undefined && (
+                <p className="metric-subtitle">Sky Cover</p>
+              )}
             </div>
+            {forecast.forecast_length && (
+              <div className="metric-card">
+                <p className="metric-label">Forecast Hours</p>
+                <p className="metric-value">{forecast.forecast_length}</p>
+                <p className="metric-subtitle">Available data points</p>
+              </div>
+            )}
           </div>
+          
+          {/* Debug info - shows API response details */}
+          {process.env.NODE_ENV === 'development' && (
+            <details className="debug-section" style={{ marginTop: '1rem', padding: '1rem', background: 'var(--surface-muted)', borderRadius: '8px', fontSize: '0.85rem' }}>
+              <summary style={{ cursor: 'pointer', fontWeight: '600', marginBottom: '0.5rem' }}>API Response Details (Debug)</summary>
+              <pre style={{ 
+                overflow: 'auto', 
+                maxHeight: '300px', 
+                background: 'var(--surface-color)', 
+                padding: '1rem', 
+                borderRadius: '4px',
+                fontSize: '0.75rem',
+                lineHeight: '1.4'
+              }}>
+                {JSON.stringify(forecast, null, 2)}
+              </pre>
+            </details>
+          )}
 
           <div className="chart-card">
             <div className="chart-card__header">

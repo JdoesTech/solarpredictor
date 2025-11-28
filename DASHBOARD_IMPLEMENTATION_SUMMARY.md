@@ -331,3 +331,5 @@ If you encounter issues:
 4. Check browser console for frontend errors
 5. Verify Solcast API key is valid and has remaining quota
 
+
+
