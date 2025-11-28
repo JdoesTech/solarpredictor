@@ -82,7 +82,7 @@ function Dashboard() {
   useEffect(() => {
     const loadStats = async () => {
       try {
-        const data = await getDashboardStats(token);
+        const data = await getDashboardStats();
         setStats(data);
       } catch (err) {
         setStatsError('Failed to load dashboard metrics.');
@@ -91,7 +91,7 @@ function Dashboard() {
       }
     };
     loadStats();
-  }, [token]);
+  }, []);
 
   const handleForecastFetch = async (lat, lon) => {
     setForecastLoading(true);
@@ -99,7 +99,7 @@ function Dashboard() {
     setSelectedCoords({ lat, lon });
 
     try {
-      const data = await fetchSolarForecast({ lat, lon }, token);
+      const data = await fetchSolarForecast({ lat, lon });
       console.log('Forecast data received:', data);
       console.log('Current conditions:', data.current_conditions);
       console.log('Hourly forecast count:', data.hourly_forecast?.length);
@@ -133,7 +133,7 @@ function Dashboard() {
     setSearching(true);
     setForecastError('');
     try {
-      const results = await searchLocation(searchQuery.trim(), token);
+      const results = await searchLocation(searchQuery.trim());
       setSearchResults(results);
       if (results.length) {
         const top = results[0];

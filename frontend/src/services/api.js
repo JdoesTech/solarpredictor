@@ -38,11 +38,7 @@ export const login = async (email, password) => {
 };
 
 export const getDashboardStats = async (token) => {
-  const config = {};
-  if (token && token !== 'null' && token !== 'undefined') {
-    config.headers = { Authorization: `Bearer ${token}` };
-  }
-  const response = await api.get('/dashboard/stats', config);
+  const response = await api.get('/dashboard/stats');
   return response.data;
 };
 
@@ -127,20 +123,12 @@ export const getHealthStatus = async (token) => {
 };
 
 export const fetchSolarForecast = async ({ lat, lon }, token) => {
-  const config = {};
-  if (token && token !== 'null' && token !== 'undefined') {
-    config.headers = { Authorization: `Bearer ${token}` };
-  }
-  const response = await api.get(`/forecast/solar?lat=${lat}&lon=${lon}`, config);
+  const response = await api.get(`/forecast/solar?lat=${lat}&lon=${lon}`);
   return response.data;
 };
 
 export const searchLocation = async (query, token) => {
-  const config = {};
-  if (token && token !== 'null' && token !== 'undefined') {
-    config.headers = { Authorization: `Bearer ${token}` };
-  }
-  const response = await api.get(`/geocode/search?q=${encodeURIComponent(query)}`, config);
+  const response = await api.get(`/geocode/search?q=${encodeURIComponent(query)}`); 
   return response.data?.results || [];
 };
 
