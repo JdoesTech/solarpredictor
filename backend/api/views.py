@@ -292,6 +292,7 @@ class SolarForecastProxy(APIView):
     """
     Proxy Solcast requests to keep API keys server-side and cache responses.
     """
+    permission_classes= []
 
     def get(self, request):
         lat_str = request.query_params.get('lat')
@@ -358,6 +359,7 @@ class GeocodeSearchProxy(APIView):
     Lightweight proxy for Nominatim search queries.
     """
 
+    permission_classes= []
     def get(self, request):
         query = request.query_params.get('q', '').strip()
         if len(query) < 3:
@@ -377,6 +379,7 @@ class DashboardStatsView(APIView):
     """
     Dashboard statistics endpoint
     """
+    permission_classes= []
     def get(self, request):
         try:
             supabase: Client = create_client(settings.SUPABASE_URL, settings.SUPABASE_KEY)
