@@ -293,7 +293,6 @@ class LoginView(APIView):
 
 class SolarForecastProxy(APIView):
     permission_classes = [AllowAny]
-    authentication_classes = []
     
     def get(self, request):
         print(f"SOLAR FORECAST CALLED: {request.query_params}")
@@ -465,7 +464,6 @@ class GeocodeSearchProxy(APIView):
     Lightweight proxy for Nominatim search queries.
     """
     permission_classes = [AllowAny]
-    authentication_classes = []
     
     def get(self, request):
         try:
@@ -497,7 +495,6 @@ class DashboardStatsView(APIView):
     Dashboard statistics endpoint
     """
     permission_classes = [AllowAny]
-    authentication_classes = []
     
     def get(self, request):
         try:
