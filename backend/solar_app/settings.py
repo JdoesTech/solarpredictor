@@ -16,7 +16,7 @@ SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-change-this-in-production'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv('DEBUG', 'True') == 'True'
 
-ALLOWED_HOSTS = ['https://solarpredictor.onrender.com']
+ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'solarpredictor.onrender.com,localhost,127.0.0.1').split(',')
 
 # Application definition
 INSTALLED_APPS = [
@@ -137,6 +137,7 @@ REST_FRAMEWORK = {
     'DEFAULT_FILTER_BACKENDS': [
         'django_filters.rest_framework.DjangoFilterBackend',
     ],
+    'EXCEPTION_HANDLER': 'api.exceptions.custom_exception_handler',
 }
 
 # CORS settings
@@ -152,8 +153,9 @@ ML_MODELS_DIR = os.path.join(BASE_DIR, 'ml_models', 'saved_models')
 os.makedirs(ML_MODELS_DIR, exist_ok=True)
 
 # File upload settings
-FILE_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024  # 10MB
-DATA_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024  # 10MB
+FILE_UPLOAD_MAX_MEMORY_SIZE = 20 * 1024 * 1024  # 20MB
+DATA_UPLOAD_MAX_MEMORY_SIZE = 20 * 1024 * 1024  # 20MB
+MAX_UPLOAD_SIZE = 20 * 1024 * 1024  # 20MB
 
 SECURE_SSL_REDIRECT = True
 SESSION_COOKIE_SECURE = True

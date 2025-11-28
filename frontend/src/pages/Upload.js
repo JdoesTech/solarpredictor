@@ -11,6 +11,29 @@ function Upload() {
   const [error, setError] = useState('');
   const [panelId, setPanelId] = useState('');
 
+  const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB
+  const ALLOWED_FILE_TYPES = {
+    'text/csv': ['.csv'],
+    'application/vnd.ms-excel': ['.xls'],
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'],
+    'application/pdf': ['.pdf']
+  };
+
+  const validateFile = (file) => {
+    if (file.size > MAX_FILE_SIZE) {
+      throw new Error(`File size exceeds 20MB limit. File size: ${(file.size / (1024 * 1024)).toFixed(2)}MB`);
+    }
+    
+    const fileExtension = '.' + file.name.split('.').pop().toLowerCase();
+    const allowedExtensions = ['.csv', '.xlsx', '.xls', '.pdf'];
+    
+    if (!allowedExtensions.includes(fileExtension)) {
+      throw new Error(`File type not supported. Allowed types: CSV, XLSX, XLS, PDF`);
+    }
+    
+    return true;
+  };
+
   const handleWeatherUpload = async (files) => {
     if (files.length === 0) return;
     setLoading(true);
@@ -18,10 +41,13 @@ function Upload() {
     setMessage('');
 
     try {
-      const result = await uploadWeatherCSV(files[0], token);
-      setMessage(`Successfully uploaded ${result.count} weather records`);
+      const file = files[0];
+      validateFile(file);
+      const result = await uploadWeatherCSV(file, token);
+      setMessage(`Successfully uploaded ${result.count} weather records from ${result.file_type || 'file'}`);
     } catch (err) {
-      setError(err.response?.data?.error || 'Upload failed');
+      const errorMsg = err.response?.data?.details || err.response?.data?.error || err.message || 'Upload failed';
+      setError(errorMsg);
     } finally {
       setLoading(false);
     }
@@ -34,10 +60,13 @@ function Upload() {
     setMessage('');
 
     try {
-      const result = await uploadProductionCSV(files[0], token);
-      setMessage(`Successfully uploaded ${result.count} production records`);
+      const file = files[0];
+      validateFile(file);
+      const result = await uploadProductionCSV(file, token);
+      setMessage(`Successfully uploaded ${result.count} production records from ${result.file_type || 'file'}`);
     } catch (err) {
-      setError(err.response?.data?.error || 'Upload failed');
+      const errorMsg = err.response?.data?.details || err.response?.data?.error || err.message || 'Upload failed';
+      setError(errorMsg);
     } finally {
       setLoading(false);
     }
@@ -61,9 +90,10 @@ function Upload() {
 
   const WeatherDropzone = () => {
     const { getRootProps, getInputProps, isDragActive } = useDropzone({
-      accept: { 'text/csv': ['.csv'] },
+      accept: ALLOWED_FILE_TYPES,
       onDrop: handleWeatherUpload,
       multiple: false,
+      maxSize: MAX_FILE_SIZE,
     });
 
     return (
@@ -77,9 +107,14 @@ function Upload() {
       }}>
         <input {...getInputProps()} />
         {isDragActive ? (
-          <p>Drop the CSV file here...</p>
+          <p>Drop the file here...</p>
         ) : (
-          <p>Drag & drop a weather CSV file here, or click to select</p>
+          <div>
+            <p>Drag & drop a weather data file here, or click to select</p>
+            <p style={{ fontSize: '0.9rem', color: '#666', marginTop: '0.5rem' }}>
+              Supported formats: CSV, XLSX, XLS, PDF (Max 20MB)
+            </p>
+          </div>
         )}
       </div>
     );
@@ -87,9 +122,10 @@ function Upload() {
 
   const ProductionDropzone = () => {
     const { getRootProps, getInputProps, isDragActive } = useDropzone({
-      accept: { 'text/csv': ['.csv'] },
+      accept: ALLOWED_FILE_TYPES,
       onDrop: handleProductionUpload,
       multiple: false,
+      maxSize: MAX_FILE_SIZE,
     });
 
     return (
@@ -103,9 +139,14 @@ function Upload() {
       }}>
         <input {...getInputProps()} />
         {isDragActive ? (
-          <p>Drop the CSV file here...</p>
+          <p>Drop the file here...</p>
         ) : (
-          <p>Drag & drop a production CSV file here, or click to select</p>
+          <div>
+            <p>Drag & drop a production data file here, or click to select</p>
+            <p style={{ fontSize: '0.9rem', color: '#666', marginTop: '0.5rem' }}>
+              Supported formats: CSV, XLSX, XLS, PDF (Max 20MB)
+            </p>
+          </div>
         )}
       </div>
     );
@@ -174,16 +215,28 @@ function Upload() {
       <div className="card">
         {activeTab === 'weather' && (
           <div>
-            <h2>Upload Weather CSV</h2>
+            <h2>Upload Weather Data</h2>
             <p>Expected columns: timestamp, temperature, humidity, wind_speed, cloud_cover, solar_irradiance, precipitation</p>
+            <p style={{ fontSize: '0.9rem', color: '#666', marginTop: '0.5rem' }}>
+              <strong>Supported file formats:</strong> CSV, XLSX, XLS, PDF (Maximum file size: 20MB)
+            </p>
+            <p style={{ fontSize: '0.85rem', color: '#888', marginTop: '0.5rem', fontStyle: 'italic' }}>
+              Note: PDF files should contain tabular data. The system will extract the first table found.
+            </p>
             <WeatherDropzone />
           </div>
         )}
 
         {activeTab === 'production' && (
           <div>
-            <h2>Upload Production CSV</h2>
+            <h2>Upload Production Data</h2>
             <p>Expected columns: timestamp, energy_output_kwh, panel_id (optional), system_capacity_kw (optional)</p>
+            <p style={{ fontSize: '0.9rem', color: '#666', marginTop: '0.5rem' }}>
+              <strong>Supported file formats:</strong> CSV, XLSX, XLS, PDF (Maximum file size: 20MB)
+            </p>
+            <p style={{ fontSize: '0.85rem', color: '#888', marginTop: '0.5rem', fontStyle: 'italic' }}>
+              Note: PDF files should contain tabular data. The system will extract the first table found.
+            </p>
             <ProductionDropzone />
           </div>
         )}

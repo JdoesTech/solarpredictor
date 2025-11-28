@@ -468,16 +468,26 @@ class GeocodeSearchProxy(APIView):
     authentication_classes = []
     
     def get(self, request):
-        query = request.query_params.get('q', '').strip()
-        if len(query) < 3:
-            return Response({'error': 'Query must be at least 3 characters long.'}, status=status.HTTP_400_BAD_REQUEST)
-
         try:
+            query = request.query_params.get('q', '').strip()
+            if not query or len(query) < 3:
+                return Response(
+                    {
+                        'error': 'Invalid search query',
+                        'details': 'Query parameter "q" must be at least 3 characters long',
+                        'received': query
+                    },
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
             results = _search_locations(query)
             return Response({'results': results})
         except Exception as exc:
             return Response(
-                {'error': 'Failed to search locations', 'details': str(exc)},
+                {
+                    'error': 'Failed to search locations',
+                    'details': str(exc)
+                },
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
@@ -513,21 +523,31 @@ class DashboardStatsView(APIView):
                 'recent_predictions': predictions.data[:10] if predictions.data else [],
             })
         except Exception as e:
+            import traceback
+            traceback.print_exc()
             return Response(
-                {'error': str(e)},
+                {
+                    'error': 'Failed to fetch dashboard statistics',
+                    'details': str(e)
+                },
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
 
 class WeatherUploadViewSet(viewsets.ViewSet):
     """
-    Handle weather data CSV uploads
+    Handle weather data file uploads (CSV, XLSX, PDF)
     """
     def create(self, request):
         file = request.FILES.get('file')
         if not file:
             return Response(
-                {'error': 'No file provided'},
+                {
+                    'error': 'No file provided',
+                    'details': 'Please upload a file (CSV, XLSX, or PDF)',
+                    'allowed_formats': ['CSV', 'XLSX', 'PDF'],
+                    'max_size_mb': 20
+                },
                 status=status.HTTP_400_BAD_REQUEST
             )
         
@@ -535,30 +555,56 @@ class WeatherUploadViewSet(viewsets.ViewSet):
             handler = FileHandler()
             data = handler.process_weather_csv(file)
             
+            if not data or len(data) == 0:
+                return Response(
+                    {
+                        'error': 'No data extracted from file',
+                        'details': 'The file appears to be empty or could not be parsed'
+                    },
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
             # Save to Supabase
             supabase: Client = create_client(settings.SUPABASE_URL, settings.SUPABASE_KEY)
             result = supabase.table('weather_data').insert(data).execute()
             
             return Response({
                 'message': f'Successfully uploaded {len(data)} weather records',
-                'count': len(data)
+                'count': len(data),
+                'file_type': file.name.split('.')[-1].upper()
             })
+        except ValueError as e:
+            return Response(
+                {
+                    'error': 'File validation error',
+                    'details': str(e)
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
         except Exception as e:
             return Response(
-                {'error': str(e)},
+                {
+                    'error': 'Error processing file',
+                    'details': str(e)
+                },
                 status=status.HTTP_400_BAD_REQUEST
             )
 
 
 class ProductionUploadViewSet(viewsets.ViewSet):
     """
-    Handle production data CSV uploads
+    Handle production data file uploads (CSV, XLSX, PDF)
     """
     def create(self, request):
         file = request.FILES.get('file')
         if not file:
             return Response(
-                {'error': 'No file provided'},
+                {
+                    'error': 'No file provided',
+                    'details': 'Please upload a file (CSV, XLSX, or PDF)',
+                    'allowed_formats': ['CSV', 'XLSX', 'PDF'],
+                    'max_size_mb': 20
+                },
                 status=status.HTTP_400_BAD_REQUEST
             )
         
@@ -566,17 +612,38 @@ class ProductionUploadViewSet(viewsets.ViewSet):
             handler = FileHandler()
             data = handler.process_production_csv(file)
             
+            if not data or len(data) == 0:
+                return Response(
+                    {
+                        'error': 'No data extracted from file',
+                        'details': 'The file appears to be empty or could not be parsed'
+                    },
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
             # Save to Supabase
             supabase: Client = create_client(settings.SUPABASE_URL, settings.SUPABASE_KEY)
             result = supabase.table('production_data').insert(data).execute()
             
             return Response({
                 'message': f'Successfully uploaded {len(data)} production records',
-                'count': len(data)
+                'count': len(data),
+                'file_type': file.name.split('.')[-1].upper()
             })
+        except ValueError as e:
+            return Response(
+                {
+                    'error': 'File validation error',
+                    'details': str(e)
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
         except Exception as e:
             return Response(
-                {'error': str(e)},
+                {
+                    'error': 'Error processing file',
+                    'details': str(e)
+                },
                 status=status.HTTP_400_BAD_REQUEST
             )
 
