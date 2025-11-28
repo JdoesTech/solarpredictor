@@ -143,6 +143,7 @@ REST_FRAMEWORK = {
 # CORS settings
 CORS_ALLOWED_ORIGINS = [
     "https://solarpredictor-1.onrender.com",
+    "https://solarpredictor.onrender.com",  # Add both variants
     "http://localhost:3000",
 ]
 

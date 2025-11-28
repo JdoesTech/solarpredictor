@@ -21,6 +21,10 @@ api.interceptors.request.use(
     if (token && token !== 'null' && token !== 'undefined') {
       config.headers.Authorization = `Bearer ${token}`;
     }
+    // Remove Content-Type header for FormData - axios will set it with boundary automatically
+    if (config.data instanceof FormData) {
+      delete config.headers['Content-Type'];
+    }
     return config;
   },
   (error) => {
@@ -48,7 +52,7 @@ export const uploadWeatherCSV = async (file, token) => {
   const response = await api.post('/upload/weather/', formData, {
     headers: {
       Authorization: `Bearer ${token}`,
-      'Content-Type': 'multipart/form-data',
+      // Don't set Content-Type manually - axios will set it with boundary automatically
     },
   });
   return response.data;
@@ -60,7 +64,7 @@ export const uploadProductionCSV = async (file, token) => {
   const response = await api.post('/upload/production/', formData, {
     headers: {
       Authorization: `Bearer ${token}`,
-      'Content-Type': 'multipart/form-data',
+      // Don't set Content-Type manually - axios will set it with boundary automatically
     },
   });
   return response.data;
@@ -77,7 +81,7 @@ export const uploadImages = async (files, panelId, token) => {
   const response = await api.post('/upload/images/', formData, {
     headers: {
       Authorization: `Bearer ${token}`,
-      'Content-Type': 'multipart/form-data',
+      // Don't set Content-Type manually - axios will set it with boundary automatically
     },
   });
   return response.data;
