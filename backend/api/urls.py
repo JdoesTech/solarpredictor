@@ -14,6 +14,7 @@ router.register(r'training', views.TrainingViewSet, basename='training')
 router.register(r'health', views.HealthViewSet, basename='health')
 
 urlpatterns = [
+    path('test', lambda request: JsonResponse({'status': 'Django ALIVE', 'time': request.GET})),
     path('', include(router.urls)),
     path('dashboard/stats', views.DashboardStatsView.as_view(), name='dashboard-stats'),
     path('auth/login', views.LoginView.as_view(), name='login'),
