@@ -35,7 +35,7 @@ export const login = async (email, password) => {
 };
 
 export const getDashboardStats = async (token) => {
-  const response = await api.get('/dashboard/stats', {
+  const response = await api.get('/api/dashboard/stats', {  
     headers: { Authorization: `Bearer ${token}` },
   });
   return response.data;
@@ -122,7 +122,7 @@ export const getHealthStatus = async (token) => {
 };
 
 export const fetchSolarForecast = async ({ lat, lon }, token) => {
-  const response = await api.get(`/forecast/solar?lat=${lat}&lon=${lon}`, {
+  const response = await api.get(`/api/forecast/solar?lat=${lat}&lon=${lon}`, {
     headers: { Authorization: `Bearer ${token}` },
   });
   return response.data;
