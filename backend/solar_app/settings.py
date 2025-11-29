@@ -16,7 +16,12 @@ SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-change-this-in-production'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv('DEBUG', 'True') == 'True'
 
-ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'solarpredictor.onrender.com,localhost,127.0.0.1').split(',')
+# ALLOWED_HOSTS - strip whitespace and handle Render's internal proxy
+allowed_hosts_str = os.getenv('ALLOWED_HOSTS', 'solarpredictor.onrender.com,localhost,127.0.0.1')
+ALLOWED_HOSTS = [host.strip() for host in allowed_hosts_str.split(',') if host.strip()]
+# Add common Render internal hostnames
+if '127.0.0.1' not in ALLOWED_HOSTS:
+    ALLOWED_HOSTS.append('127.0.0.1')
 
 # Application definition
 INSTALLED_APPS = [
@@ -148,6 +153,9 @@ CORS_ALLOWED_ORIGINS = [
 ]
 
 CORS_ALLOW_CREDENTIALS = True
+
+# CSRF settings - trust the same origins as CORS
+CSRF_TRUSTED_ORIGINS = CORS_ALLOWED_ORIGINS.copy()
 
 # ML Model paths
 ML_MODELS_DIR = os.path.join(BASE_DIR, 'ml_models', 'saved_models')
