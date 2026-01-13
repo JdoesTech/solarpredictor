@@ -52,7 +52,6 @@ export const uploadWeatherCSV = async (file, token) => {
   const response = await api.post('/upload/weather/', formData, {
     headers: {
       Authorization: `Bearer ${token}`,
-      // Don't set Content-Type manually - axios will set it with boundary automatically
     },
   });
   return response.data;

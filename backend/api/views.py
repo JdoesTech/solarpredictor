@@ -376,7 +376,7 @@ class SolarForecastProxy(APIView):
                 return Response(payload)
         except Exception as e:
             print(f"WARNING: Cache retrieval failed: {type(e).__name__}: {e}")
-            # Continue to fetch fresh data if cache fails
+            # Continues to fetch fresh data if cache fails
         
         # Fetch fresh forecast data
         try:
@@ -390,7 +390,7 @@ class SolarForecastProxy(APIView):
                 'expires_at': (datetime.utcnow() + timedelta(seconds=SOLCAST_CACHE_TTL)).isoformat() + 'Z',
             }
             
-            # Store in cache (use deepcopy to avoid reference issues)
+            # Store in cache 
             try:
                 _store_forecast_in_cache(lat, lon, copy.deepcopy(payload))
             except Exception as e:
